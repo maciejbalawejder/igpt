@@ -50,7 +50,7 @@ def parse_arguments():
     parser.add_argument("--seed", type=int, default=42, help="seed for random, np, tf")
     
     # input primers
-    parser.add_argument("--primers, type=list, default=None, help="the input image for pixel generation if None it's unconditional sampling")
+    parser.add_argument("--primers", type=list, default=None, help="the input image for pixel generation if None it's unconditional sampling")
 
     args = parser.parse_args()
     print("input args:\n", json.dumps(vars(args), indent=4, separators=(",", ":")))
@@ -141,7 +141,7 @@ def evaluate(sess, evX, evY, X, Y, gen_loss, clf_loss, accuracy, n_batch, desc, 
 def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, primers):
     samples = np.zeros([n_gpu * n_sub_batch, n_px * n_px], dtype=np.int32)
     # samples is array where we collect generate pixels, the shape is : [BATCH, (32*32)]
-    if primers not None:
+    if primers is not None:
         # we add primers to the samples
         crop_n_px, n_px = len(primers[0]) // 32, 32
         samples[:, :crop_n_px * n_px] = primers[:, :]
