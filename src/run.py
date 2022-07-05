@@ -14,45 +14,37 @@ from scipy.special import softmax
 from tensorflow.contrib.training import HParams
 from tqdm import tqdm
 
-from model import model
-from utils import iter_data, count_parameters
+from igpt.src.model import model
+from igpt.src.utils import iter_data, count_parameters
 
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-
+class RunConfig:s
     # data and I/O
-    parser.add_argument("--data_path", type=str, default="/root/downloads/imagenet")
-    parser.add_argument("--ckpt_path", type=str, default="/root/downloads/model.ckpt-1000000")
-    parser.add_argument("--color_cluster_path", type=str, default="/root/downloads/kmeans_centers.npy")
-    parser.add_argument("--save_dir", type=str, default="/root/save/")
+    data_path : str = "/root/downloads/imagenet"
+    ckpt_path : str = "downloads/model/" + "model.ckpt-1000000"
+    color_cluster_path : str = "downloads/clusters/" + "kmeans_centers.npy"
+    save_dir : str = "results/"
 
     # model
-    parser.add_argument("--n_embd", type=int, default=512)
-    parser.add_argument("--n_head", type=int, default=8)
-    parser.add_argument("--n_layer", type=int, default=24)
-    parser.add_argument("--n_px", type=int, default=32, help="image height or width in pixels")
-    parser.add_argument("--n_vocab", type=int, default=512, help="possible values for each pixel")
+    n_embd : int = 512 
+    n_head : int = 8
+    n_layer : int = 24
+    n_px : int = 32 # image height or width in pixels
+    n_vocab : int = 512 # possible values for each pixel
 
-    parser.add_argument("--bert", action="store_true", help="use the bert objective (defaut: autoregressive)")
-    parser.add_argument("--bert_mask_prob", type=float, default=0.15)
-    parser.add_argument("--clf", action="store_true", help="add a learnable classification head")
+    bert : bool = False # evaluates the model, requires a checkpoint and dataset
+    bert_mask_prob : float = 0.15 
+    clf : bool = False # add a learnable classification head
 
     # parallelism
-    parser.add_argument("--n_sub_batch", type=int, default=8, help="per-gpu batch size")
-    parser.add_argument("--n_gpu", type=int, default=8, help="number of gpus to distribute training across")
+    n_sub_batch : int = 8 # per-gpu batch size
+    n_gpu : int = 1 # number of gpus to distribute training across
 
-    # mode
-    parser.add_argument("--eval", action="store_true", help="evaluates the model, requires a checkpoint and dataset")
-    parser.add_argument("--sample", action="store_true", help="samples from the model, requires a checkpoint and clusters")
+    # mode 
+    eval : bool = False # evaluates the model, requires a checkpoint and dataset
+    sample : bool = False # samples from the model, requires a checkpoint and clusters
 
     # reproducibility
-    parser.add_argument("--seed", type=int, default=42, help="seed for random, np, tf")
-
-    args = parser.parse_args()
-    print("input args:\n", json.dumps(vars(args), indent=4, separators=(",", ":")))
-    return args
-
+    seed : int = 42 # random seed for random, numpy and tensorflow
 
 def set_seed(seed):
     random.seed(seed)
@@ -135,15 +127,15 @@ def evaluate(sess, evX, evY, X, Y, gen_loss, clf_loss, accuracy, n_batch, desc, 
 
 
 # naive sampler without caching
-def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, primers):
+def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, primer):
     samples = np.zeros([n_gpu * n_sub_batch, n_px * n_px], dtype=np.int32)
     # samples is array where we collect generate pixels, the shape is : [BATCH, (32*32)]
+    primers = n_sub_batch * [primer]
     if primers is not None:
         # we add primers to the samples
-        crop_n_px, n_px = len(primers[0]) // 32, 32
-        samples[:, :crop_n_px * n_px] = primers[:, :]
+        samples[:, :len(primer)] = primers
                         
-    for i in tqdm(range(n_px * n_px), ncols=80, leave=False):
+    for i in tqdm(range(len(primer), n_px * n_px), ncols=80, leave=False):
         np_gen_logits = sess.run(gen_logits, {X: samples})
         for j in range(n_gpu):
             p = softmax(np_gen_logits[j][:, i, :], axis=-1)  # logits to probas
@@ -159,7 +151,7 @@ def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, sav
         imwrite(f"{args.save_dir}/sample_{i}.png", samples[i])
 
 
-def main(args, primers=None):
+def main(args, primer=None):
     set_seed(args.seed)
 
     n_batch = args.n_sub_batch * args.n_gpu
@@ -197,9 +189,4 @@ def main(args, primers=None):
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir)
             clusters = np.load(args.color_cluster_path)
-            sample(sess, X, gen_logits, args.n_sub_batch, args.n_gpu, args.n_px, args.n_vocab, clusters, args.save_dir, args.primers)
-
-
-if __name__ == "__main__":
-    args = parse_arguments()
-    main(args)
+            sample(sess, X, gen_logits, args.n_sub_batch, args.n_gpu, args.n_px, args.n_vocab, clusters, args.save_dir, primer)
