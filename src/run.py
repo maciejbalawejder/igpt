@@ -48,9 +48,6 @@ def parse_arguments():
 
     # reproducibility
     parser.add_argument("--seed", type=int, default=42, help="seed for random, np, tf")
-    
-    # input primers
-    parser.add_argument("--primers", type=list, default=None, help="the input image for pixel generation if None it's unconditional sampling")
 
     args = parser.parse_args()
     print("input args:\n", json.dumps(vars(args), indent=4, separators=(",", ":")))
@@ -162,7 +159,7 @@ def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, sav
         imwrite(f"{args.save_dir}/sample_{i}.png", samples[i])
 
 
-def main(args):
+def main(args, primers=None):
     set_seed(args.seed)
 
     n_batch = args.n_sub_batch * args.n_gpu
