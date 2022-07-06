@@ -17,7 +17,7 @@ from tqdm import tqdm
 from igpt.src.model import model
 from igpt.src.utils import iter_data, count_parameters
 
-class RunConfig:s
+class RunConfig:
     # data and I/O
     data_path : str = "/root/downloads/imagenet"
     ckpt_path : str = "downloads/model/" + "model.ckpt-1000000"
@@ -131,11 +131,13 @@ def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, sav
     samples = np.zeros([n_gpu * n_sub_batch, n_px * n_px], dtype=np.int32)
     # samples is array where we collect generate pixels, the shape is : [BATCH, (32*32)]
     primers = n_sub_batch * [primer]
+    start = 0
     if primers is not None:
         # we add primers to the samples
         samples[:, :len(primer)] = primers
+        start = len(primer)
                         
-    for i in tqdm(range(len(primer), n_px * n_px), ncols=80, leave=False):
+    for i in tqdm(range(start, n_px * n_px), ncols=80, leave=False):
         np_gen_logits = sess.run(gen_logits, {X: samples})
         for j in range(n_gpu):
             p = softmax(np_gen_logits[j][:, i, :], axis=-1)  # logits to probas
