@@ -127,7 +127,7 @@ def evaluate(sess, evX, evY, X, Y, gen_loss, clf_loss, accuracy, n_batch, desc, 
 
 
 # naive sampler without caching
-def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, primer):
+def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, args, primer):
     samples = np.zeros([n_gpu * n_sub_batch, n_px * n_px], dtype=np.int32)
     # samples is array where we collect generate pixels, the shape is : [BATCH, (32*32)]
     primers = n_sub_batch * [primer]
@@ -191,4 +191,4 @@ def main(args, primer=None):
             if not os.path.exists(args.save_dir):
                 os.makedirs(args.save_dir)
             clusters = np.load(args.color_cluster_path)
-            sample(sess, X, gen_logits, args.n_sub_batch, args.n_gpu, args.n_px, args.n_vocab, clusters, args.save_dir, primer)
+            sample(sess, X, gen_logits, args.n_sub_batch, args.n_gpu, args.n_px, args.n_vocab, clusters, args.save_dir, args, primer)
