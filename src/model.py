@@ -32,7 +32,7 @@ def norm(x, scope, *, axis=-1, epsilon=1e-5):
     """Normalize to mean = 0, std = 1, then do a diagonal affine transform."""
     with tf.compat.v1.variable_scope(scope):
         n_state = x.shape[axis].value
-        g = tf.get_variable('g', [n_state], initializer=tf.constant_initializer(1))
+        g = tf.compat.v1.get_variable('g', [n_state], initializer=tf.constant_initializer(1))
         s = tf.reduce_mean(tf.square(x), axis=axis, keepdims=True)
         x = x * tf.compat.v1.rsqrt(s + epsilon)
         x = x*g
@@ -91,7 +91,7 @@ def attn(x, scope, n_state, *, past, hparams):
     def multihead_attn(q, k, v):
         # q, k, v have shape [batch, heads, sequence, features]
         w = tf.matmul(q, k, transpose_b=True)
-        w = w * tf.rsqrt(tf.cast(v.shape[-1].value, w.dtype))
+        w = w * tf.compat.v1.rsqrt(tf.cast(v.shape[-1].value, w.dtype))
 
         if not hparams.bert:
             w = mask_attn_weights(w)
@@ -129,7 +129,7 @@ def mlp(x, scope, n_state, *, hparams):
 
 
 def block(x, scope, *, past, hparams):
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         nx = x.shape[-1].value
         a, present = attn(norm(x, 'ln_1'), 'attn', nx, past=past, hparams=hparams)
         x = x + a
