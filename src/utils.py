@@ -39,7 +39,7 @@ def color_quantize(x, np_clusters):
 
 def count_parameters():
     total_parameters = 0
-    for variable in tf.trainable_variables():
+    for variable in tf.compat.v1.trainable_variables():
         shape = variable.get_shape()
         variable_parameters = 1
         for dim in shape:
