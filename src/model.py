@@ -30,11 +30,11 @@ def gelu2(x):
 
 def norm(x, scope, *, axis=-1, epsilon=1e-5):
     """Normalize to mean = 0, std = 1, then do a diagonal affine transform."""
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         n_state = x.shape[axis].value
         g = tf.get_variable('g', [n_state], initializer=tf.constant_initializer(1))
         s = tf.reduce_mean(tf.square(x), axis=axis, keepdims=True)
-        x = x * tf.rsqrt(s + epsilon)
+        x = x * tf.compat.v1.rsqrt(s + epsilon)
         x = x*g
         return x
 
@@ -49,7 +49,7 @@ def merge_states(x):
     return tf.reshape(x, start + [a*b])
 
 def conv1d(x, scope, nf, *, w_init_stdev=0.02):
-    with tf.variable_scope(scope):
+    with tf.compat.v1.variable_scope(scope):
         *start, nx = shape_list(x)
         w = tf.get_variable('w', [nx, nf], initializer=tf.random_normal_initializer(stddev=w_init_stdev))
         c = tf.reshape(tf.matmul(tf.reshape(x, [-1, nx]), tf.reshape(w, [-1, nf])), start+[nf])
@@ -153,7 +153,7 @@ def positions_for(tokens, past_length):
 
 
 def model(hparams, X, Y=None, past=None, scope='model', reuse=False):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         results = {}
         batch, sequence = shape_list(X)
 
@@ -161,11 +161,11 @@ def model(hparams, X, Y=None, past=None, scope='model', reuse=False):
             M = tf.greater(tf.random.uniform([batch, sequence]), hparams.bert_mask_prob)
             M = tf.cast(M, tf.float32)
 
-        wpe = tf.get_variable('wpe', [hparams.n_ctx, hparams.n_embd],
+        wpe = tf.compat.v1.get_variable('wpe', [hparams.n_ctx, hparams.n_embd],
                              initializer=tf.random_normal_initializer(stddev=0.01))
-        wte = tf.get_variable('wte', [hparams.n_vocab, hparams.n_embd],
+        wte = tf.compat.v1.get_variable('wte', [hparams.n_vocab, hparams.n_embd],
                              initializer=tf.random_normal_initializer(stddev=0.02))
-        wtet = tf.get_variable('wtet', [hparams.n_vocab, hparams.n_embd],
+        wtet = tf.compat.v1.get_variable('wtet', [hparams.n_vocab, hparams.n_embd],
                              initializer=tf.random_normal_initializer(stddev=0.0))
         past_length = 0 if past is None else tf.shape(past)[-2]
 
@@ -174,7 +174,7 @@ def model(hparams, X, Y=None, past=None, scope='model', reuse=False):
         if hparams.bert:
             h = h * tf.expand_dims(M, 2)
         else:
-            sos = tf.get_variable('sos', [hparams.n_embd],
+            sos = tf.compat.v1.get_variable('sos', [hparams.n_embd],
                                  initializer=tf.random_normal_initializer(stddev=0.02))
             sos_tok = tf.ones([batch, 1, hparams.n_embd], dtype=tf.float32) * sos
             h = tf.concat([sos_tok, h[:,:-1,:]], axis=1)
