@@ -130,7 +130,7 @@ def evaluate(sess, evX, evY, X, Y, gen_loss, clf_loss, accuracy, n_batch, desc, 
 def sample(sess, X, gen_logits, n_sub_batch, n_gpu, n_px, n_vocab, clusters, save_dir, args, primer):
     samples = np.zeros([n_gpu * n_sub_batch, n_px * n_px], dtype=np.int32)
     # samples is array where we collect generate pixels, the shape is : [BATCH, (32*32)]
-    primers = n_sub_batch * [primer]
+    primers = n_sub_batch * n_gpu * [primer]
     start = 0
     if primers is not None:
         # we add primers to the samples
